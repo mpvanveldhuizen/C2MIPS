@@ -1,0 +1,79 @@
+/* Matt Van Veldhuizen
+   3/21/15
+   c2mips.lpp
+   CS 631
+   Project
+   C to MIPS assembly compiler
+*/
+%option noyywrap yylineno nounput
+%{
+#include "c2mips.tab.hpp"
+#include "func.h"
+%}
+%x COMMENT
+/* float exponent */
+EXP ([Ee][-+]?[0-9]+)
+%%
+"+" |
+"-" |
+"*" |
+"/" |
+"%" |
+"|" |
+"&" |
+"^" |
+"~" |
+"=" |
+"," |
+"(" |
+")" |
+";" |
+"{" |
+"}" { return yytext[0]; }
+
+"<<" { return SLT; }
+">>" { return SRT; }
+
+"++" { return INC; }
+"--" { return DEC; }
+
+">"  { yylval.fn = 1; return CMP; }
+"<"  { yylval.fn = 2; return CMP; }
+"!=" { yylval.fn = 3; return CMP; }
+"==" { yylval.fn = 4; return CMP; }
+">=" { yylval.fn = 5; return CMP; }
+"<=" { yylval.fn = 6; return CMP; }
+
+"+="  { return PEQ; }
+"-="  { return MEQ; }
+"*="  { return TEQ; }
+"/="  { return DEQ; }
+"<<=" { return LSEQ; }
+">>=" { return RSEQ; }
+"&="  { return AEQ; }
+"^="  { return XEQ; }
+"|="  { return OEQ; }
+
+"if"      { return IF; }
+"else"    { return ELSE; }
+"while"   { return WHILE; }
+"for"     { return FOR; }
+"return"  { return RETURN; }
+"int"     { return NINT; }
+
+[a-zA-Z][a-zA-Z0-9]* { yylval.s = lookup(yytext); return NAME;}
+
+[0-9]+ { yylval.i = atoi(yytext); return INT; }
+
+([0-9]*"."[0-9]+|[0-9]+"."){EXP}? |
+"."?[0-9]+{EXP}?                    { yyerror("No double or float operations are valid at this time"); return 0; }
+
+[ \t\n] { /* ignore whitespace */ }
+
+"/*" { BEGIN COMMENT; }
+<COMMENT>"*/" { BEGIN INITIAL; }
+<COMMENT>([^*]|\n)+|.
+<COMMENT><<EOF>> { yyerror("Unterminated comment\n"); return 0; }
+
+. { yyerror("Invalid character [%c]\n",*yytext); return 0;}
+%%
